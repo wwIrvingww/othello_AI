@@ -2,6 +2,7 @@ import requests
 import random
 import sys
 import time
+import torch.nn as nn
 
 ### Public IP Server
 ### Testing Server
@@ -92,6 +93,59 @@ class OthelloPlayer():
     def AI_MOVE(self, board):
         row = random.randint(0, 7)
         col = random.randint(0, 7)
+
+        # === Irving ===
+        class BoardEvaluator(nn.Module):
+            def __init__(self):
+                pass
+
+            def forward(self, x):
+                pass
+
+        def evaluate(board, model, symbol):
+            pass
+
+        def load_model():
+            """
+            Cargar el modelo entrenado desde archivo.
+            """
+            pass
+
+        # === Josue ===
+        def get_valid_moves(board, symbol):
+            """
+            Retorna lista de tuplas (row, col) con movimientos válidos para symbol.
+            """
+            pass
+
+        def simulate_move(board, move, symbol):
+            """
+            Devuelve una copia del tablero con el movimiento aplicado.
+            """
+            pass
+
+        def prioritize_opening_moves(valid_moves):
+            """
+            Opcional: priorizar esquinas u otras jugadas estratégicas si es el inicio.
+            """
+            pass
+
+        # === Sebas ===
+        def minimax(board, depth, alpha, beta, maximizing_player, model, symbol, start_time, time_limit=2.5):
+            """
+            Retorna la mejor puntuación estimada desde la perspectiva del símbolo actual.
+            Debe usar poda alfa-beta y respetar el límite de tiempo.
+            """
+            pass
+
+        # === Lógica principal de decisión ===
+        """
+        1. Cargar modelo.
+        2. Obtener movimientos válidos.
+        3. Si estamos en apertura, priorizar esquinas.
+        4. Ejecutar minimax para cada movimiento.
+        5. Retornar el mejor movimiento posible.
+        """
         return (row, col)
 
 if __name__ == '__main__':
