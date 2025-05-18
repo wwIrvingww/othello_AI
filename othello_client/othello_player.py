@@ -157,10 +157,63 @@ class OthelloPlayer:
         # === Sebas ===
         def minimax(board, depth, alpha, beta, maximizing_player, model, symbol, start_time, time_limit=2.5):
             """
-            Retorna la mejor puntuación estimada desde la perspectiva del símbolo actual.
-            Debe usar poda alfa-beta y respetar el límite de tiempo.
+            Algoritmo Minimax con poda alfa-beta y límite de tiempo.
+            Solo explora parcialmente el árbol, evaluando hijos de la jugada actual,
+            pero sin explorar profundidad completa si el tiempo es limitado.
             """
-            pass
+            # Cortar si el tiempo excede
+            if time.time() - start_time >= time_limit:
+                return evaluate(board, model, symbol)
+
+            # Obtener movimientos válidos para el jugador actual del turno
+            current_symbol = symbol if maximizing_player else -symbol
+            valid_moves = get_valid_moves(board, current_symbol)
+
+            # Si no hay movimientos o se llegó al fondo
+            if depth == 0 or not valid_moves:
+                return evaluate(board, model, symbol)
+
+            # Maximización (jugador actual)
+            if maximizing_player:
+                max_eval = float('-inf')
+                for move in valid_moves:
+                    next_board = simulate_move(board, move, current_symbol)
+
+                    # Cortar por tiempo si se excede durante iteraciones
+                    if time.time() - start_time >= time_limit:
+                        break
+
+                    # Solo una capa más de profundidad si hay tiempo
+                    if depth > 1:
+                        eval = minimax(next_board, depth - 1, alpha, beta, False, model, symbol, start_time, time_limit)
+                    else:
+                        eval = evaluate(next_board, model, symbol)
+
+                    max_eval = max(max_eval, eval)
+                    alpha = max(alpha, eval)
+                    if beta <= alpha:
+                        break  # poda
+                return max_eval
+
+            # Minimización (oponente)
+            else:
+                min_eval = float('inf')
+                for move in valid_moves:
+                    next_board = simulate_move(board, move, current_symbol)
+
+                    if time.time() - start_time >= time_limit:
+                        break
+
+                    if depth > 1:
+                        eval = minimax(next_board, depth - 1, alpha, beta, True, model, symbol, start_time, time_limit)
+                    else:
+                        eval = evaluate(next_board, model, symbol)
+
+                    min_eval = min(min_eval, eval)
+                    beta = min(beta, eval)
+                    if beta <= alpha:
+                        break  # poda
+                return min_eval
 
         # === Irving ===
         # Evaluar con la CNN definida en board_evaluator.py
