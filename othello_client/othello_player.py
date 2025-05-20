@@ -16,8 +16,7 @@ class OthelloPlayer:
         ### Player symbol in a match
         self.current_symbol = 0
         # Cargar el modelo de Irving
-        self.model, self.device = load_model()
-
+        self.model, self.device = load_model("model.pt")
     def connect(self, session_name) -> bool:
         """
         :param session_name:
