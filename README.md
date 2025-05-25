@@ -53,6 +53,36 @@ Para saber en la partida actual que color de pieza tiene asignada, esta informac
 self.current_symbol
 ```
 
+## 🧪 Instrucciones para correr el servidor de pruebas, frontend y jugador IA
+
+### 🔧 1. Instalar dependencias
+
+Asegúrate de tener instaladas las bibliotecas necesarias:
+
+```bash
+pip install fastapi uvicorn streamlit requests torch
+```
+
+## 🚀 2. Correr el servidor de pruebas
+
+```python
+python server/othello_server.py
+```
+
+## 🧠 3. Iniciar un jugador IA
+
+```bash
+python othello_player.py <session_id> <player_id>
+```
+
+
+## 🎨 4. Correr el visualizador frontend con Streamlit
+
+```python
+streamlit run frontend/othello_visualizer.py
+```
+Usa el mismo session_id en el frontend para visualizar correctamente la partida.
+
 ## License
 
 [MIT](https://choosealicense.com/licenses/mit/)
