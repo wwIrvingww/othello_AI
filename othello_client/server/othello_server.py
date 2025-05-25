@@ -4,6 +4,30 @@ import random
 import uvicorn
 import copy
 
+def apply_othello_move(board, row, col, symbol):
+    directions = [(0, 1), (1, 1), (1, 0), (1, -1),
+                  (0, -1), (-1, -1), (-1, 0), (-1, 1)]
+
+    flipped = []
+    board[row][col] = symbol  # Place the piece
+
+    for dr, dc in directions:
+        r, c = row + dr, col + dc
+        pieces = []
+
+        while 0 <= r < 8 and 0 <= c < 8 and board[r][c] == -symbol:
+            pieces.append((r, c))
+            r += dr
+            c += dc
+
+        if 0 <= r < 8 and 0 <= c < 8 and board[r][c] == symbol and pieces:
+            for pr, pc in pieces:
+                board[pr][pc] = symbol
+            flipped.extend(pieces)
+
+    return len(flipped) > 0  # True if at least one piece was flipped
+
+
 app = FastAPI()
 sessions = {}
 
@@ -101,28 +125,35 @@ async def turn_to_move(session_name: str, player_name: str, match_id: str):
 
 @app.post("/player/move")
 async def make_move(session_name: str, player_name: str, match_id: str, row: int, col: int):
-    if (session_name not in sessions or 
-        match_id not in sessions[session_name]["matches"] or
-        sessions[session_name]["matches"][match_id]["current_turn"] != player_name):
-        return {"status": 400, "message": "Invalid move request"}
-    
-    match = sessions[session_name]["matches"][match_id]
-    board = match["board"]
-    
-    # Check if move is valid
-    if row < 0 or row > 7 or col < 0 or col > 7 or board[row][col] != 0:
-        return {"status": 400, "message": "Invalid move position"}
-    
-    # Get player symbol
-    symbol = sessions[session_name]["players"][player_name]["symbol"]
-    
-    # Apply the move (simplified - would need actual Othello rules here)
-    board[row][col] = symbol
-    
-    # Switch turns
-    match["current_turn"] = [p for p in match["players"] if p != player_name][0]
-    
-    return {"status": 200, "message": f"Move made at ({row},{col})"}
+    try:
+        if session_name not in sessions:
+            return {"status": 400, "message": "Invalid session"}
+        
+        if match_id not in sessions[session_name]["matches"]:
+            return {"status": 400, "message": "Invalid match ID"}
+        
+        match = sessions[session_name]["matches"][match_id]
+
+        if match["current_turn"] != player_name:
+            return {"status": 400, "message": "Not your turn"}
+
+        board = match["board"]
+        if row < 0 or row > 7 or col < 0 or col > 7:
+            return {"status": 400, "message": "Invalid position"}
+
+        if board[row][col] != 0:
+            return {"status": 400, "message": "Cell is already occupied"}
+
+        symbol = sessions[session_name]["players"][player_name]["symbol"]
+        valid = apply_othello_move(board, row, col, symbol)
+        if not valid:
+            return {"status": 400, "message": "Invalid move: no pieces flipped"}
+
+        match["current_turn"] = [p for p in match["players"] if p != player_name][0]
+        return {"status": 200, "message": f"Move made at ({row},{col})"}
+
+    except Exception as e:
+        return {"status": 500, "message": f"Internal server error: {str(e)}"}
 
 @app.get("/")
 async def root():
