@@ -137,21 +137,93 @@ class OthelloPlayer:
         # === Josue ===
         def get_valid_moves(board, symbol):
             """
-            Retorna lista de tuplas (row, col) con movimientos válidos para symbol.
+            Returns a list of valid moves (row, col) for the given symbol.
             """
-            pass
+            valid_moves = []
+            directions = [(0, 1), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0), (-1, 1)]
+            
+            for row in range(8):
+                for col in range(8):
+                    if board[row][col] != 0:  # Skip non-empty cells
+                        continue
+                        
+                    # Check all 8 directions
+                    for dr, dc in directions:
+                        r, c = row + dr, col + dc
+                        # Check if there's an opponent's piece adjacent
+                        if (0 <= r < 8 and 0 <= c < 8 and 
+                            board[r][c] == -symbol):
+                            # Continue in this direction
+                            r += dr
+                            c += dc
+                            found_opponent = False
+                            
+                            while 0 <= r < 8 and 0 <= c < 8:
+                                if board[r][c] == -symbol:
+                                    found_opponent = True
+                                elif board[r][c] == symbol and found_opponent:
+                                    # Found a valid move
+                                    valid_moves.append((row, col))
+                                    break
+                                else:  # Empty cell or reached our own piece without opponent's piece
+                                    break
+                                r += dr
+                                c += dc
+            
+            return valid_moves
 
         def simulate_move(board, move, symbol):
             """
-            Devuelve una copia del tablero con el movimiento aplicado.
+            Returns a copy of the board with the move applied.
+            Flips captured opponent pieces.
             """
-            pass
+            row, col = move
+            new_board = [row[:] for row in board]  # Create a deep copy
+            
+            if new_board[row][col] != 0:  # Cell already occupied
+                return new_board
+                
+            new_board[row][col] = symbol
+            directions = [(0, 1), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0), (-1, 1)]
+            
+            # Check all 8 directions
+            for dr, dc in directions:
+                pieces_to_flip = []
+                r, c = row + dr, col + dc
+                
+                # Collect opponent pieces
+                while 0 <= r < 8 and 0 <= c < 8 and new_board[r][c] == -symbol:
+                    pieces_to_flip.append((r, c))
+                    r += dr
+                    c += dc
+                    
+                # If we find our own piece at the end, flip all collected pieces
+                if 0 <= r < 8 and 0 <= c < 8 and new_board[r][c] == symbol and pieces_to_flip:
+                    for flip_r, flip_c in pieces_to_flip:
+                        new_board[flip_r][flip_c] = symbol
+            
+            return new_board
 
         def prioritize_opening_moves(valid_moves):
             """
-            Opcional: priorizar esquinas u otras jugadas estratégicas si es el inicio.
+            Prioritizes corner moves and avoids moves adjacent to corners.
             """
-            pass
+            corners = [(0, 0), (0, 7), (7, 0), (7, 7)]
+            bad_spots = [(0, 1), (1, 0), (1, 1), (0, 6), (1, 6), (1, 7), 
+                         (6, 0), (6, 1), (7, 1), (6, 6), (6, 7), (7, 6)]
+            
+            # First priority: corners
+            for move in valid_moves:
+                if move in corners:
+                    return move
+                    
+            # Filter out bad spots if possible
+            safe_moves = [move for move in valid_moves if move not in bad_spots]
+            if safe_moves:
+                return random.choice(safe_moves)
+            
+            # If no choice, return any valid move
+            return random.choice(valid_moves) if valid_moves else None
 
         # === Sebas ===
         def minimax(board, depth, alpha, beta, maximizing_player, model, symbol, start_time, time_limit=2.5):
