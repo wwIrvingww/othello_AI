@@ -130,10 +130,6 @@ class OthelloPlayer:
 
     ### Solo modifique esta función
     def AI_MOVE(self, board):
-        # movida aleatoria por defecto
-        row = random.randint(0, 7)
-        col = random.randint(0, 7)
-
         # === Josue ===
         def get_valid_moves(board, symbol):
             """
@@ -226,15 +222,13 @@ class OthelloPlayer:
             return random.choice(valid_moves) if valid_moves else None
 
         # === Sebas ===
-        def minimax(board, depth, alpha, beta, maximizing_player, model, symbol, start_time, time_limit=2.5):
+        def minimax(board, depth, alpha, beta, maximizing_player, model, device, symbol, start_time, time_limit=2.5):
             """
             Algoritmo Minimax con poda alfa-beta y límite de tiempo.
-            Solo explora parcialmente el árbol, evaluando hijos de la jugada actual,
-            pero sin explorar profundidad completa si el tiempo es limitado.
             """
             # Cortar si el tiempo excede
             if time.time() - start_time >= time_limit:
-                return evaluate(board, model, symbol)
+                return evaluate(board, model, device, symbol)
 
             # Obtener movimientos válidos para el jugador actual del turno
             current_symbol = symbol if maximizing_player else -symbol
@@ -242,7 +236,7 @@ class OthelloPlayer:
 
             # Si no hay movimientos o se llegó al fondo
             if depth == 0 or not valid_moves:
-                return evaluate(board, model, symbol)
+                return evaluate(board, model, device, symbol)
 
             # Maximización (jugador actual)
             if maximizing_player:
@@ -256,9 +250,9 @@ class OthelloPlayer:
 
                     # Solo una capa más de profundidad si hay tiempo
                     if depth > 1:
-                        eval = minimax(next_board, depth - 1, alpha, beta, False, model, symbol, start_time, time_limit)
+                        eval = minimax(next_board, depth - 1, alpha, beta, False, model, device, symbol, start_time, time_limit)
                     else:
-                        eval = evaluate(next_board, model, symbol)
+                        eval = evaluate(next_board, model, device, symbol)
 
                     max_eval = max(max_eval, eval)
                     alpha = max(alpha, eval)
@@ -276,9 +270,9 @@ class OthelloPlayer:
                         break
 
                     if depth > 1:
-                        eval = minimax(next_board, depth - 1, alpha, beta, True, model, symbol, start_time, time_limit)
+                        eval = minimax(next_board, depth - 1, alpha, beta, True, model, device, symbol, start_time, time_limit)
                     else:
-                        eval = evaluate(next_board, model, symbol)
+                        eval = evaluate(next_board, model, device, symbol)
 
                     min_eval = min(min_eval, eval)
                     beta = min(beta, eval)
@@ -286,16 +280,58 @@ class OthelloPlayer:
                         break  # poda
                 return min_eval
 
-        # === Irving ===
-        # Evaluar con la CNN definida en board_evaluator.py
-        valid = get_valid_moves(board, self.current_symbol)
-        best_score = -float('inf')
-        best_move = (row, col)
-        for mv in valid:
-            sim = simulate_move(board, mv, self.current_symbol)
-            sc = evaluate(sim, self.model, self.device, self.current_symbol)
-            if sc > best_score:
-                best_score, best_move = sc, mv
+        # === MAIN AI LOGIC - NOW USING MINIMAX ===
+        # Get valid moves
+        valid_moves = get_valid_moves(board, self.current_symbol)
+        
+        # If no valid moves, return a random move (fallback)
+        if not valid_moves:
+            return random.randint(0, 7), random.randint(0, 7)
+        
+        # For early game (first 10 moves), prioritize strategic positions
+        piece_count = sum(1 for row in board for cell in row if cell != 0)
+        if piece_count < 10:
+            strategic_move = prioritize_opening_moves(valid_moves)
+            if strategic_move:
+                return strategic_move
+
+        # Use minimax for decision making
+        best_score = float('-inf')
+        best_move = valid_moves[0]  # Default to first valid move
+        start_time = time.time()
+        
+        # Determine search depth based on game phase
+        if piece_count < 20:
+            search_depth = 3  # Early game: moderate depth
+        elif piece_count < 40:
+            search_depth = 4  # Mid game: deeper search
+        else:
+            search_depth = 5  # End game: deep search
+            
+        # Evaluate each move using minimax
+        for move in valid_moves:
+            # Simulate making this move
+            simulated_board = simulate_move(board, move, self.current_symbol)
+            
+            # Get score using minimax (opponent's turn after our move)
+            score = minimax(
+                simulated_board,
+                depth=search_depth,
+                alpha=float('-inf'),
+                beta=float('inf'),
+                maximizing_player=False,  # Opponent's turn next
+                model=self.model,
+                device=self.device,
+                symbol=self.current_symbol,
+                start_time=start_time,
+                time_limit=2.5  # Time limit in seconds
+            )
+            
+            # Update best move if better score found
+            if score > best_score:
+                best_score = score
+                best_move = move
+                
         return best_move
 
 if __name__ == '__main__':
