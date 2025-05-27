@@ -114,7 +114,8 @@ async def turn_to_move(session_name: str, player_name: str, match_id: str):
             match["winner"] = "Black"
         else:
             match["winner"] = "Tie"
-    
+            
+    print(f"Current turn: {match['current_turn']}, checking for: {player_name}")
     return {
         "turn": match["current_turn"] == player_name,
         "board": match["board"],
@@ -149,7 +150,9 @@ async def make_move(session_name: str, player_name: str, match_id: str, row: int
         if not valid:
             return {"status": 400, "message": "Invalid move: no pieces flipped"}
 
-        match["current_turn"] = [p for p in match["players"] if p != player_name][0]
+        next_player = [p for p in match["players"] if p != player_name][0]
+        print(f"Turn changed to: {next_player}")
+        match["current_turn"] = next_player
         return {"status": 200, "message": f"Move made at ({row},{col})"}
 
     except Exception as e:
